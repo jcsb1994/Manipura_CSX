@@ -1,4 +1,30 @@
-# Altium
+# Altium ----------------------------------------
+
 M_PCT_2/Project*/*
 M_PCT_2/History/*
 M_PCT_2/__Previews/*
+
+# PSOC Creator ----------------------------------------
+
+# folders generated after build
+Manipura*/Cortex*/*
+Manipura*/codegentemp/*
+Manipura*/Generated_Source/*
+Manipura*/Export/*
+
+# files generated after build
+*.cycdx
+*.cyfit
+*.rpt
+*.log
+
+# PSoC 6 files
+cy8c6xx7*
+cy_ipc_config*
+system_psoc62*
+Manipura_I2C_USB_Slave_Firmware.cydsn/iar/*
+Manipura_I2C_USB_Slave_Firmware.cydsn/mdk/*
+Manipura_I2C_USB_Slave_Firmware.cydsn/armgcc/*
+
+# OneDrive
+*.jcbsk
