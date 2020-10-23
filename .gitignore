@@ -21,10 +21,10 @@ Manipura*/Export/*
 # PSoC 6 files
 cy8c6xx7*
 cy_ipc_config*
-system_psoc62*
-Manipura_I2C_USB_Slave_Firmware.cydsn/iar/*
-Manipura_I2C_USB_Slave_Firmware.cydsn/mdk/*
-Manipura_I2C_USB_Slave_Firmware.cydsn/armgcc/*
+system_psoc63*
+Manipura_USB_I2C_Slave_Firmware.cydsn/iar/*
+Manipura_USB_I2C_Slave_Firmware.cydsn/mdk/*
+Manipura_USB_I2C_Slave_Firmware.cydsn/armgcc/*
 
 # OneDrive
-*.jcbsk
+*cyprj.*

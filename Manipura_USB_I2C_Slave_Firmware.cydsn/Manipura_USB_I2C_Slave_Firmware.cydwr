@@ -4,7 +4,14 @@
     <Group key="v1" />
   </Group>
   <Data key="DataVersionKey" value="2" />
-  <Group key="DWRInstGuidMapping" />
+  <Group key="DWRInstGuidMapping">
+    <Group key="Pin">
+      <Data key="5c74f514-da03-4308-9b48-d9799a8dcfc7/65f3af6c-759b-4ccb-8c66-5c95ba1f5f4f" value="UART_tx" />
+      <Data key="5c74f514-da03-4308-9b48-d9799a8dcfc7/b7e8018e-1ef7-49c0-b5a5-61641a03e31c" value="UART_rx" />
+      <Data key="90d935cd-d53c-433c-a8ec-6a74f9242907/2aab8a93-e7dd-4bd4-8210-42652cd079c5" value="EZI2C_sda" />
+      <Data key="90d935cd-d53c-433c-a8ec-6a74f9242907/69c3b5e8-b094-4d65-b96b-9f4f3a9a8641" value="EZI2C_scl" />
+    </Group>
+  </Group>
   <Group key="M0S8Clock">
     <Group key="DesigneWideClks">
       <Group key="8AF878A3-9701-44BB-864C-92E241DEEFC9">
@@ -466,6 +473,31 @@
         <Data key="src_clk_name" value="FLL" />
         <Data key="start_on_reset" value="False" />
       </Group>
+      <Group key="ADA77A51-2EDA-49E0-9358-E7A5F2860024">
+        <Data key="accuracy_display_unit" value="1" />
+        <Data key="AccuracyMinus" value="0" />
+        <Data key="AccuracyPlus" value="0" />
+        <Data key="check_tolerance" value="False" />
+        <Data key="derive_type" value="BUILTIN" />
+        <Data key="desired_freq" value="32" />
+        <Data key="desired_unit" value="6" />
+        <Data key="divider" value="0" />
+        <Data key="Divider" value="4" />
+        <Data key="ECO Frequency" value="32 MHz" />
+        <Data key="enabled" value="False" />
+        <Data key="Load cap (pF)" value="9.9" />
+        <Data key="minus_tolerance" value="0" />
+        <Data key="name" value="AltHF" />
+        <Data key="netlist_name" value="AltHF" />
+        <Data key="plus_tolerance" value="0" />
+        <Data key="scope" value="BUILTIN" />
+        <Data key="sourceClk_minus_acuracy_name" value="0" />
+        <Data key="sourceClk_plus_acuracy_name" value="0" />
+        <Data key="src_clk_id" value="" />
+        <Data key="src_clk_name" value="" />
+        <Data key="start_on_reset" value="False" />
+        <Data key="Startup time (μs)" value="785" />
+      </Group>
       <Group key="BAE5EB24-1ECF-44AC-90E5-F6AE7E694F04">
         <Data key="check_tolerance" value="False" />
         <Data key="derive_type" value="BUILTIN" />
@@ -563,6 +595,29 @@
       </Group>
     </Group>
   </Group>
+  <Group key="Pin2">
+    <Group key="5c74f514-da03-4308-9b48-d9799a8dcfc7/65f3af6c-759b-4ccb-8c66-5c95ba1f5f4f">
+      <Group key="0">
+        <Data key="Port Format" value="5,1" />
+      </Group>
+    </Group>
+    <Group key="5c74f514-da03-4308-9b48-d9799a8dcfc7/b7e8018e-1ef7-49c0-b5a5-61641a03e31c">
+      <Group key="0">
+        <Data key="Port Format" value="5,0" />
+      </Group>
+    </Group>
+    <Group key="90d935cd-d53c-433c-a8ec-6a74f9242907/2aab8a93-e7dd-4bd4-8210-42652cd079c5">
+      <Group key="0">
+        <Data key="Port Format" value="10,1" />
+      </Group>
+    </Group>
+    <Group key="90d935cd-d53c-433c-a8ec-6a74f9242907/69c3b5e8-b094-4d65-b96b-9f4f3a9a8641">
+      <Group key="0">
+        <Data key="Port Format" value="10,0" />
+      </Group>
+    </Group>
+    <Group key="UnAssigned Pins" />
+  </Group>
   <Group key="PlaceDir">
     <Data key="count" value="0" />
   </Group>
@@ -590,8 +645,6 @@
     <Data key="CYDEV_VDDD" value="3.3" />
     <Data key="CYDEV_VDDIO0" value="3.3" />
     <Data key="CYDEV_VDDIO1" value="3.3" />
-    <Data key="CYDEV_VDDIOA" value="3.3" />
-    <Data key="CYDEV_VDDIOR" value="3.3" />
-    <Data key="CYDEV_VDDUSB" value="3.3" />
+    <Data key="CYDEV_VDDR_HVL" value="3.3" />
   </Group>
 </DesignWideResources>
