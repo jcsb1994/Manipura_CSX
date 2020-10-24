@@ -3,12 +3,12 @@
 #include <stdio.h> 
 #include "message.h"
 
-/************************** Macro Definitions *********************************/
 
+/************************** Macro Definitions *********************************/
     
-#define BytesToU16BE(B) (       \
-      (uint16_t)((B)[0]) << 8   \
-    | (uint16_t)((B)[1])        \
+#define BytesToU16LE(B) (       \
+      (uint16_t)((B)[1]) << 8   \
+    | (uint16_t)((B)[0])        \
 )
     
 #define BytesToU32LE(B) (       \
@@ -18,28 +18,18 @@
     | (uint32_t)((B)[0])        \
 )
 
-/*
-// BELOW MACROS NOT NEEDED ANYMORE
-
-#define BYTES_PER_TAXEL_RAW_COUNT (2)
-#define RAW_PACKET_SIZE (uint8_t) (TAXELS_NB*BYTES_PER_TAXEL_RAW_COUNT) 
-
-#define BYTES_PER_ELEM_CP (4)
-#define CP_PACKET_SIZE (uint8_t) ( (ROW_TAXELS_NB + COL_TAXELS_NB) * BYTES_PER_ELEM_CP ) 
-
-// Temporary, packets have no ID and cannot be decyphered by this device. Strictly receiving and printing
-#define RECEIVE_RAW_COUNTS_CONFIG 0 
-#define RECEIVE_BIST_CP_CONFIG 0
-#define TOTAL_PACKET_SIZE CP_PACKET_SIZE
-*/
 
 /******************************************************************************/
 
+uint8_t ezi2cBuffer[(1 + (2*49))]; 
 
-uint8_t ezi2cBuffer[BUFFER_SIZE]; // I2C buffer for communication with master 
+static uint32_t print_counter_flag_bitmask;
 
-static bool print_counter_flag; // Global marker for when counter rdy to send
-bool full_buffer_flag; // Global marker for when counter rdy to send
+enum bitmask_pos
+{
+    RAW_PRINT_BITMASK_POS = 0,
+    PARASITIC_BITMASK_POS = 1,
+};
 
 void EZI2C_InterruptHandler(void)
 {
@@ -49,7 +39,7 @@ void EZI2C_InterruptHandler(void)
 void print_counter_int_handler()  // Custom function for handling interrupts from print_counter
 {
     Cy_TCPWM_ClearInterrupt(print_counter_HW, print_counter_CNT_NUM, CY_TCPWM_INT_ON_TC);
-    print_counter_flag++;
+    print_counter_flag_bitmask |= 0xFF; // all flags turned on
 }
 
 void printf_counter_setup() 
@@ -104,11 +94,9 @@ int main(void)
         /* Write complete without errors: parse packets, otherwise ignore */
         if((0u != (ezi2cState & CY_SCB_EZI2C_STATUS_WRITE1)) && (0u == (ezi2cState & CY_SCB_EZI2C_STATUS_ERR)))
         {
-            full_buffer_flag = true;
             
             if (ezi2cBuffer[0] == raw_count_id)
             {
-                
                 const uint8_t bytes_per_taxel = 2;
                 uint8_t current_taxel_bytes[bytes_per_taxel];   
                 uint8_t payload_size = bytes_per_taxel * TAXELS_NB;
@@ -118,33 +106,20 @@ int main(void)
                 {        
                     current_taxel_bytes[i % bytes_per_taxel] = ezi2cBuffer[i];
                     
-                    if(i % bytes_per_taxel == (bytes_per_taxel-1))
+                    if(!(i % bytes_per_taxel))
                     {
                         taxel_raw_values[current_taxel_index] = BytesToU16BE(current_taxel_bytes);
                         current_taxel_index++;
                      //   if(current_taxel_index >= TAXELS_NB)
                      //       current_taxel_index = 0;
                     }
-                }    
-            }
-            
-            else if (ezi2cBuffer[0] == parasitic_id)
-            {
+                }   
                 
-                const uint8_t bytes_per_cp_val = 4;
-                uint8_t current_taxel_bytes[bytes_per_cp_val];   
-                uint8_t payload_size = bytes_per_cp_val * (COL_TAXELS_NB * ROW_TAXELS_NB);
-                uint8_t current_taxel_index = 0;
-            }
-
-        }
-            
-        if (print_counter_flag && full_buffer_flag)
-        {
-            printf("Msg ID: %d", ezi2cBuffer[0]);
-            switch(ezi2cBuffer[0])
-            {
-                case raw_count_id:
+                if(print_counter_flag_bitmask & (1 << RAW_PRINT_BITMASK_POS))
+                {
+                    printf("bytes %d %d %d %d %d\r\n", ezi2cBuffer[0], ezi2cBuffer[1], 
+                    ezi2cBuffer[2], ezi2cBuffer[3], ezi2cBuffer[4]);
+                    
                     for(int i = 1; i <= TAXELS_NB; i++)
                     {
                         printf("%d: %lu  ", i, (unsigned long)taxel_raw_values[i-1]);
@@ -152,81 +127,47 @@ int main(void)
                             printf("\r\n");
                     }
                     printf("\r\n");
-                    print_counter_flag = 0;
-                    break;
-                case parasitic_id:
+                    print_counter_flag_bitmask &= ~(1 << RAW_PRINT_BITMASK_POS); 
+                }
+            }
+            
+            else if (ezi2cBuffer[0] == parasitic_id)
+            {
+                
+                const uint8_t bytes_per_cp_val = 4;
+                uint8_t current_value_bytes[bytes_per_cp_val];   
+                uint8_t payload_size = bytes_per_cp_val * (COL_TAXELS_NB * ROW_TAXELS_NB);
+                uint8_t current_value_index = 0;
+                
+                for(int i = 1; i <= payload_size; i++)
+                {        
+                    current_value_bytes[i % bytes_per_cp_val] = ezi2cBuffer[i];
+                    
+                    if(!(i % bytes_per_cp_val))
+                    {
+                        cp_values[current_value_index] = BytesToU32LE(current_value_bytes);
+                        current_value_index++;
+                   //     if(current_value_index >= TAXELS_NB)
+                   //         current_value_index = 0;
+                    }
+                }
+                    
+                if (print_counter_flag_bitmask & (1 << PARASITIC_BITMASK_POS))
+                {
                     for(int i = 0; i < (ROW_TAXELS_NB + COL_TAXELS_NB); i++)
                     {
                         printf("Cp %d: %lu \r\n", i, (unsigned long)cp_values[i]); 
                     }
-                    break;
-                default:
-                    break;
+                    printf("\r\n");
+                    print_counter_flag_bitmask &= ~(1 << PARASITIC_BITMASK_POS);
+                }
             }
-        full_buffer_flag = false;
-        print_counter_flag = false;
+            //printf("Msg ID: %d", ezi2cBuffer[0]);
         }
-
+    
     NVIC_EnableIRQ(EZI2C_SCB_IRQ_cfg.intrSrc); // enable interrupts to call the i2c isr
     }
 }                    
-#if RECEIVE_RAW_COUNTS_CONFIG
-            uint8 bytes[BYTES_PER_TAXEL_RAW_COUNT];
-            int element_i = 0;
-
-            for(int i = 0; i < TOTAL_PACKET_SIZE; i++)
-            {        
-                bytes[i % BYTES_PER_TAXEL_RAW_COUNT] = ezi2cBuffer[i];
-                ezi2cBuffer[i] = 0;
-                if(i % BYTES_PER_TAXEL_RAW_COUNT)
-                {
-                    raw_values[element_i] = BytesToU16BE(bytes);
-                    element_i++;
-                    if(element_i >= TAXELS_NB)
-                        element_i = 0;
-                }
-            }           
-#endif // RECEIVE_RAW_COUNTS_CONFIG
-
-#if RECEIVE_BIST_CP_CONFIG
-
-            uint8 bytes[BYTES_PER_ELEM_CP];
-            int element_i = 0;
-           
-            for(int i = 0; i < TOTAL_PACKET_SIZE; i++)
-            {        
-                bytes[i % BYTES_PER_ELEM_CP] = ezi2cBuffer[i];
-                
-                if(i % BYTES_PER_ELEM_CP == (BYTES_PER_ELEM_CP-1) )
-                {
-                    cp_values[element_i] = BytesToU32LE(bytes);
-                    element_i++;
-                    if(element_i >= TAXELS_NB)
-                        element_i = 0;
-                }
-            }           
-
-#endif // RECEIVE_BIST_CP_CONFIG
-
-
-#if RECEIVE_BIST_CP_CONFIG
-            for(int i = 0; i < (ROW_TAXELS_NB + COL_TAXELS_NB); i++)
-                {
-                    printf("Cp %d: %lu \r\n", i, (unsigned long)cp_values[i]); 
-                }
-#endif // RECEIVE_BIST_CP_CONFIG
-                         
-#if RECEIVE_RAW_COUNTS_CONFIG
-                for(int i = 1; i <= TAXELS_NB; i++)
-                {
-                    printf("%d: %lu  ", i, (unsigned long)raw_values[i-1]);
-                    if (!(i%7))
-                        printf("\r\n");
-                }
-                printf("\r\n\n");
-                print_counter_flag = 0;
-#endif
-
 
 
 /* [] END OF FILE */

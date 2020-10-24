@@ -11,7 +11,7 @@
 */
 
 #define SEND_RAW_COUNTS_CONFIG 1
-#define SEND_BIST_CP_CONFIG 1
+#define SEND_BIST_CP_CONFIG 0
     
 void u16tobytes(uint8_t *out, uint16_t in)
 {
@@ -51,43 +51,49 @@ void init_hardware(void)
 int main()
 {
     init_hardware() ;   
-
-
     
-
+        for(int i = 0; i < 5; i++)
+    {
+        ledPin_Write(1);
+        CyDelay(100);
+        ledPin_Write(0);
+        CyDelay(100);
+    }
 
     for(;;)
     {
         while(CapSense_IsBusy() != CapSense_NOT_BUSY) {}
 
 #if SEND_RAW_COUNTS_CONFIG
-        {
+        
             const uint8_t values_nb = TAXELS_NB;
             uint taxel_raw_values[values_nb];
             const uint8_t bytes_per_value = 2;
-            const uint8_t packet_size = (bytes_per_value * values_nb);
-            uint8_t capsense_raw_value_bytes[packet_size];
+            const uint8_t packet_size = (bytes_per_value * values_nb) + 1;
+            uint8_t raw_counts_message_bytes[packet_size]; // + 1 for ID
 
             ledPin2_Write(1) ;
+            
+            raw_counts_message_bytes[0] = raw_count_id;
             for(int i = 0; i < values_nb; i++)
             {
                 taxel_raw_values[i] = CapSense_dsRam.snsList.touchpad0[i].raw[0];
-                u16tobytes(&capsense_raw_value_bytes[i*bytes_per_value], taxel_raw_values[i]);
+                u16tobytes(&raw_counts_message_bytes[(i*bytes_per_value) + 1], taxel_raw_values[i]);
             }       
             ledPin2_Write(0);
             
             ledPin_Write(1);
-            uint8_t buffer_index = 0;
-            i2c_writeReg(buffer_index, raw_count_id);
-            buffer_index += (sizeof raw_count_id);
-            i2c_writeRegs(buffer_index, capsense_raw_value_bytes, packet_size);
-            buffer_index += (sizeof packet_size);
-            for(; buffer_index < packet_size; buffer_index++)
-            {
-                i2c_writeReg(buffer_index, 0);
-            }
+            //uint8_t buffer_index = 0;
+            //i2c_writeReg(buffer_index, raw_count_id);
+            //buffer_index ++;
+            i2c_writeRegs(0, raw_counts_message_bytes, packet_size);
+            //buffer_index += (sizeof packet_size);
+    //        for(; buffer_index < BUFFER_SIZE; buffer_index++)
+    //        {
+    //            i2c_writeReg(buffer_index, 0);
+    //        }
             ledPin_Write(0);
-        }
+        
 #endif // SEND_RAW_COUNTS_CONFIG
         
         
@@ -103,11 +109,6 @@ int main()
             const uint8_t packet_size = (bytes_per_value * values_nb);
             uint8_t capsense_cp_values_bytes[packet_size];
 
-            /* 
-            uint8_t msg[10] = "BIST Cp\r\n";  
-            sprintf(msg, "BIST Pin Cp (fF)\n\n\r  Rx Pins\r\n");
-            i2c_writeRegs(0,msg , 10);  
-            UART_UartPutString(msg); */
             for (int i = 0; i < values_nb; i ++)
             {
                 capsense_cp_values[i] = CapSense_GetSensorCapacitance(CapSense_TOUCHPAD0_WDGT_ID, i, &state);
@@ -121,7 +122,7 @@ int main()
             buffer_index += (sizeof parasitic_id);
             i2c_writeRegs(buffer_index, capsense_cp_values_bytes, packet_size);
             buffer_index += (sizeof packet_size);
-            for(; buffer_index < packet_size; buffer_index++)
+            for(; buffer_index < BUFFER_SIZE; buffer_index++)
             {
                 i2c_writeReg(buffer_index, 0);
             }
