@@ -20,6 +20,10 @@
 
 
 /******************************************************************************/
+// a travailler: revoir le buffer size, voir si capable de changer sans tout fucker, sinon 99 sera size pr tout
+// lire des messages fixes avec bytestouint32 et voir si fctne
+// cp lecture 
+
 
 uint8_t ezi2cBuffer[(1 + (2*49))]; 
 
@@ -108,10 +112,8 @@ int main(void)
                     
                     if(!(i % bytes_per_taxel))
                     {
-                        taxel_raw_values[current_taxel_index] = BytesToU16BE(current_taxel_bytes);
+                        taxel_raw_values[current_taxel_index] = BytesToU16LE(current_taxel_bytes);
                         current_taxel_index++;
-                     //   if(current_taxel_index >= TAXELS_NB)
-                     //       current_taxel_index = 0;
                     }
                 }   
                 

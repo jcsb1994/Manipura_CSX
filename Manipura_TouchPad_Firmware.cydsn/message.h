@@ -17,11 +17,13 @@
 
 #define BUFFER_SIZE (1 + (4 * TAXELS_NB) )
 
+/*
 enum password
 {
     pw_hb = 'M',
     pw_lb = 'C'
 };
+*/
 
 uint8_t raw_count_id = 'r';
 uint8_t parasitic_id = 'p';

@@ -10,8 +10,8 @@
 #define TOTAL_CP_BIST_PACKET_SIZE (uint8_t) ( (ROW_TAXELS_NB + COL_TAXELS_NB) * BYTES_PER_TAXEL_CP_BIST ) 
 */
 
-#define SEND_RAW_COUNTS_CONFIG 1
-#define SEND_BIST_CP_CONFIG 0
+#define SEND_RAW_COUNTS_CONFIG 0
+#define SEND_BIST_CP_CONFIG 1
     
 void u16tobytes(uint8_t *out, uint16_t in)
 {
@@ -21,10 +21,10 @@ void u16tobytes(uint8_t *out, uint16_t in)
 
 void u32tobytes(uint8_t *out, uint32_t in)
 {
-        out[0] = (in >> 24); 
-        out[1] = (in >> 16); 
-        out[2] = (in >> 8); 
-        out[3] = (in);      
+        out[3] = (in >> 24); 
+        out[2] = (in >> 16); 
+        out[1] = (in >> 8); 
+        out[0] = (in);      
 }
     
 void init_hardware(void)
@@ -106,26 +106,18 @@ int main()
             const uint8_t values_nb = (ROW_TAXELS_NB * COL_TAXELS_NB);
             uint32_t capsense_cp_values[values_nb];
             const uint8_t bytes_per_value = 4;
-            const uint8_t packet_size = (bytes_per_value * values_nb);
-            uint8_t capsense_cp_values_bytes[packet_size];
+            const uint8_t packet_size = (bytes_per_value * values_nb) + 1; 
+            uint8_t capsense_cp_packet_bytes[packet_size];
 
-            for (int i = 0; i < values_nb; i ++)
+            capsense_cp_packet_bytes[0] = parasitic_id;
+            for (int i = 1; i <= values_nb; i ++)
             {
-                capsense_cp_values[i] = CapSense_GetSensorCapacitance(CapSense_TOUCHPAD0_WDGT_ID, i, &state);
-                u32tobytes(&capsense_cp_values_bytes[i*bytes_per_value], capsense_cp_values[i]);
+                capsense_cp_values[i] = 6666;// CapSense_GetSensorCapacitance(CapSense_TOUCHPAD0_WDGT_ID, i, &state);
+                u32tobytes(&capsense_cp_packet_bytes[i*bytes_per_value], capsense_cp_values[i]);
             }
             
-            i2c_writeRegs(0, capsense_cp_values_bytes, packet_size);
-            ledPin_Write(1);
-            uint8_t buffer_index = 0;
-            i2c_writeReg(buffer_index, parasitic_id);
-            buffer_index += (sizeof parasitic_id);
-            i2c_writeRegs(buffer_index, capsense_cp_values_bytes, packet_size);
-            buffer_index += (sizeof packet_size);
-            for(; buffer_index < BUFFER_SIZE; buffer_index++)
-            {
-                i2c_writeReg(buffer_index, 0);
-            }
+            i2c_writeRegs(0, capsense_cp_packet_bytes, packet_size);
+
             ledPin_Write(0);
         }    
 #endif // SEND_BIST_CP_CONFIG
