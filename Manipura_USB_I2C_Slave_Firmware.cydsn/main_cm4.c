@@ -6,12 +6,12 @@
 
 /************************** Macro Definitions *********************************/
     
-#define BytesToU16LE(B) (       \
+#define BytesToU16BE(B) (       \
       (uint16_t)((B)[1]) << 8   \
     | (uint16_t)((B)[0])        \
 )
     
-#define BytesToU32LE(B) (       \
+#define BytesToU32BE(B) (       \
       (uint32_t)((B)[3]) << 24  \
     | (uint32_t)((B)[2]) << 16  \
     | (uint32_t)((B)[1]) << 8   \
@@ -24,7 +24,6 @@
 // lire des messages fixes avec bytestouint32 et voir si fctne
 // cp lecture 
 
-
 uint8_t ezi2cBuffer[(1 + (2*49))]; 
 
 static uint32_t print_counter_flag_bitmask;
@@ -33,6 +32,8 @@ enum bitmask_pos
 {
     RAW_PRINT_BITMASK_POS = 0,
     PARASITIC_BITMASK_POS = 1,
+    EXTC_BITMASK_POS,
+    VDDA_BITMASK_POS
 };
 
 void EZI2C_InterruptHandler(void)
@@ -74,9 +75,48 @@ void i2c_init()
     Cy_SCB_EZI2C_Enable(EZI2C_HW);
 }
 
+uint32_t test_val[4] = {0B1, 0B10, 0B100, 0B1000};
+uint8_t test_i2c_fake_buffer[1+ (2*49)];
+
+void unpack_i2c_packet(uint8_t nb_values_in_packet, uint8_t bytes_per_value, uint32_t * values, uint8_t buffer_head_size)
+{
+    uint8_t current_value_bytes[bytes_per_value];   
+    uint16_t payload_size = bytes_per_value * nb_values_in_packet;
+    uint8_t current_value_index = 0;
+    
+    if(!nb_values_in_packet | !bytes_per_value)
+        return;
+    
+    for(int i = 1; i <= payload_size; i++)
+    {        
+        current_value_bytes[(i % bytes_per_value)] = ezi2cBuffer[i];   //  test_i2c_fake_buffer[i+buffer_head_size]; //
+        
+        if(!(i % bytes_per_value))
+        {
+           // values[current_value_index] = BytesToU16LE(current_value_bytes);
+            
+            
+            values[current_value_index] = 0;
+            
+            for(int bi = (bytes_per_value-1); bi >= 0; bi --)
+            {
+                values[current_value_index] |= ((uint32_t)(current_value_bytes[bi]) << (bi * 8));    
+            }
+            
+            current_value_index++;
+        }
+    }
+}
 
 int main(void)
 {
+    for (uint16 i = 1; i < (1+(2*49)); i+=2 )
+    {
+        test_i2c_fake_buffer[i+1] = i>>8;       //big byte at end (BE)
+        test_i2c_fake_buffer[i] = i & 0xFF;
+    }
+    
+    
     uint32 ezi2cState;  // stores ezi2c status
     
     __enable_irq(); /* Enable global interrupts. */
@@ -89,6 +129,8 @@ int main(void)
     
     uint32_t taxel_raw_values[TAXELS_NB];
     uint32_t cp_values[ROW_TAXELS_NB + COL_TAXELS_NB];
+    uint32_t extc_values[2];   
+    uint16_t vdda_value;
     
     for(;;)
     {     
@@ -98,9 +140,10 @@ int main(void)
         /* Write complete without errors: parse packets, otherwise ignore */
         if((0u != (ezi2cState & CY_SCB_EZI2C_STATUS_WRITE1)) && (0u == (ezi2cState & CY_SCB_EZI2C_STATUS_ERR)))
         {
-            
+  
             if (ezi2cBuffer[0] == raw_count_id)
             {
+            /*    
                 const uint8_t bytes_per_taxel = 2;
                 uint8_t current_taxel_bytes[bytes_per_taxel];   
                 uint8_t payload_size = bytes_per_taxel * TAXELS_NB;
@@ -112,16 +155,15 @@ int main(void)
                     
                     if(!(i % bytes_per_taxel))
                     {
-                        taxel_raw_values[current_taxel_index] = BytesToU16LE(current_taxel_bytes);
+                        taxel_raw_values[current_taxel_index] = BytesToU16BE(current_taxel_bytes);
                         current_taxel_index++;
                     }
-                }   
+                }
+             */   
+                unpack_i2c_packet(TAXELS_NB, 2, taxel_raw_values, 1);
                 
                 if(print_counter_flag_bitmask & (1 << RAW_PRINT_BITMASK_POS))
-                {
-                    printf("bytes %d %d %d %d %d\r\n", ezi2cBuffer[0], ezi2cBuffer[1], 
-                    ezi2cBuffer[2], ezi2cBuffer[3], ezi2cBuffer[4]);
-                    
+                {                    
                     for(int i = 1; i <= TAXELS_NB; i++)
                     {
                         printf("%d: %lu  ", i, (unsigned long)taxel_raw_values[i-1]);
@@ -135,22 +177,19 @@ int main(void)
             
             else if (ezi2cBuffer[0] == parasitic_id)
             {
-                
                 const uint8_t bytes_per_cp_val = 4;
                 uint8_t current_value_bytes[bytes_per_cp_val];   
                 uint8_t payload_size = bytes_per_cp_val * (COL_TAXELS_NB * ROW_TAXELS_NB);
                 uint8_t current_value_index = 0;
                 
-                for(int i = 1; i <= payload_size; i++)
+                for(int i = 0; i < payload_size; i++)
                 {        
-                    current_value_bytes[i % bytes_per_cp_val] = ezi2cBuffer[i];
+                    current_value_bytes[i % bytes_per_cp_val] = ezi2cBuffer[i+1];
                     
-                    if(!(i % bytes_per_cp_val))
+                    if((i % bytes_per_cp_val) == (bytes_per_cp_val - 1))
                     {
-                        cp_values[current_value_index] = BytesToU32LE(current_value_bytes);
+                        cp_values[current_value_index] = BytesToU32BE(current_value_bytes);
                         current_value_index++;
-                   //     if(current_value_index >= TAXELS_NB)
-                   //         current_value_index = 0;
                     }
                 }
                     
@@ -164,7 +203,63 @@ int main(void)
                     print_counter_flag_bitmask &= ~(1 << PARASITIC_BITMASK_POS);
                 }
             }
-            //printf("Msg ID: %d", ezi2cBuffer[0]);
+            /*
+            else if (ezi2cBuffer[0] == ext_cap_id)
+            {
+                const uint8_t nb_extc_val = 2;
+                const uint8_t bytes_per_extc_val = 4;
+                
+                uint8_t vdda_value_bytes[bytes_per_vdda_val];   
+                //uint8_t current_value_index = 0;
+                
+
+                for(int i = 0; i < payload_size; i++)
+                {        
+                    current_value_bytes[i % bytes_per_extc_val] = ezi2cBuffer[i+1];
+                    
+                    if((i % bytes_per_extc_val) == (bytes_per_extc_val - 1))
+                    {
+                        extc_values[current_value_index] = BytesToU32LE(current_value_bytes);
+                        current_value_index++;
+                    }
+                }
+                
+                if (print_counter_flag_bitmask & (1 << EXTC_BITMASK_POS))
+                {
+                    printf("CINTA: %u , CINTB: %u \r\n", extc_values[0], extc_values[1]);                 
+                    printf("\r\n");
+                    
+                    print_counter_flag_bitmask &= ~(1 << EXTC_BITMASK_POS);
+                }
+            }
+            
+            else if (ezi2cBuffer[0] == vdda_id)
+            {
+                //uint16_t vdda_val = BytesToU16LE(current_taxel_bytes) 
+                const uint8_t vdda_bytes = 2;
+                uint8_t vdda_value_bytes;   
+                
+                uint8_t current_value_index = 0;
+                
+                for(int i = 0; i < bytes_per_vdda_val; i++)
+                {   
+                    vdda_value_bytes[i % bytes_per_vdda_val] = ezi2cBuffer[i+1];
+                    
+                    if((i % bytes_per_vdda_val) == (bytes_per_vdda_val - 1))
+                    {
+                        vdda_value = BytesToU32LE(vdda_value_bytes);
+                    }
+                }
+                
+                if (print_counter_flag_bitmask & (1 << EXTC_BITMASK_POS))
+                {
+                    printf("CINTA: %u , CINTB: %u \r\n", extc_values[0], extc_values[1]);                 
+                    printf("\r\n");
+                    
+                    print_counter_flag_bitmask &= ~(1 << EXTC_BITMASK_POS);
+                }
+            }
+            */
         }
     
     NVIC_EnableIRQ(EZI2C_SCB_IRQ_cfg.intrSrc); // enable interrupts to call the i2c isr
