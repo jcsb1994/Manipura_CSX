@@ -27,8 +27,6 @@ enum password
 
 uint8_t raw_count_id = 'r';
 uint8_t parasitic_id = 'p';
-uint8_t vdda_id = 'v';
-uint8_t ext_cap_id = 'e';
 /*
 enum message_id
 {
