@@ -6,7 +6,10 @@ M_PCT_2/__Previews/*
 
 # PSOC Creator ----------------------------------------
 
-# folders generated after build
+# ignore PSoC Creator workspaces
+*.cywrk
+
+# folders generated after build (any PSoC series)
 Manipura*/Cortex*/*
 Manipura*/codegentemp/*
 Manipura*/Generated_Source/*
@@ -18,7 +21,7 @@ Manipura*/Export/*
 *.rpt
 *.log
 
-# PSoC 6 files
+# PSoC 6 specific files
 cy8c6xx7*
 cy_ipc_config*
 system_psoc63*
@@ -28,3 +31,4 @@ Manipura_USB_I2C_Slave_Firmware.cydsn/armgcc/*
 
 # OneDrive
 *cyprj.*
+*cywrk.*
