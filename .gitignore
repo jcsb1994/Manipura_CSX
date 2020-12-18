@@ -10,10 +10,10 @@ M_PCT_2/__Previews/*
 *.cywrk
 
 # folders generated after build (any PSoC series)
-Manipura*/Cortex*/*
-Manipura*/codegentemp/*
-Manipura*/Generated_Source/*
-Manipura*/Export/*
+*.cydsn/Cortex*/*
+*.cydsn/codegentemp/*
+*.cydsn/Generated_Source/*
+*.cydsn/Export/*
 
 # files generated after build
 *.cycdx
@@ -25,9 +25,9 @@ Manipura*/Export/*
 cy8c6xx7*
 cy_ipc_config*
 system_psoc63*
-Manipura_USB_I2C_Slave_Firmware.cydsn/iar/*
-Manipura_USB_I2C_Slave_Firmware.cydsn/mdk/*
-Manipura_USB_I2C_Slave_Firmware.cydsn/armgcc/*
+*.cydsn/iar/*
+*.cydsn/mdk/*
+*.cydsn/armgcc/*
 
 # OneDrive
 *cyprj.*

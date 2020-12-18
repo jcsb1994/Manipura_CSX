@@ -47,7 +47,6 @@ void init_hardware(void)
     }
 }
 
-
 int main()
 {
     init_hardware() ;   

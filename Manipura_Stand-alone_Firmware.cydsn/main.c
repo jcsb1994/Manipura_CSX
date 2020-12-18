@@ -1,11 +1,8 @@
 /* ========================================
  *
- * Copyright YOUR COMPANY, THE YEAR
+ * Copyright Coro, ETS, Montreal, 2020
  * All Rights Reserved
  * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
  *
  * ========================================
 */
@@ -13,13 +10,26 @@
 
 int main(void)
 {
-    CyGlobalIntEnable; /* Enable global interrupts. */
+    CyGlobalIntEnable; // Enable global interrupts
+    
+    EZI2C_Start();  // Tune capsense sensors with I2C
 
-    /* Place your initialization/startup code here (e.g. MyInst_Start()) */
+    EZI2C_EzI2CSetBuffer1(
+                      sizeof(CapSense_dsRam),
+                      sizeof(CapSense_dsRam),
+                      (uint8 *) &CapSense_dsRam 
+                     );
+    
+    CapSense_Start();
+    CapSense_ScanAllWidgets();
 
     for(;;)
     {
-        /* Place your application code here. */
+        if(CapSense_IsBusy() == CapSense_NOT_BUSY)
+        {
+            CapSense_RunTuner();
+            CapSense_ScanAllWidgets();
+        }
     }
 }
 

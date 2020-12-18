@@ -57,7 +57,6 @@ void printf_counter_setup()
     Cy_TCPWM_TriggerStart(print_counter_HW, print_counter_CNT_MASK);
 }
 
-
 void i2c_init()
 {
         /* Hook interrupt service routine and enable interrupt */
@@ -73,7 +72,6 @@ void i2c_init()
     /* Enable SCB for the EZI2C operation */
     Cy_SCB_EZI2C_Enable(EZI2C_HW);
 }
-
 
 int main(void)
 {
